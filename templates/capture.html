@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Scan your eyes — ScleraScope{% endblock %}
+{% block head %}
+<style>
+  .stage{position:relative;border-radius:20px;overflow:hidden;background:#000;border:1px solid var(--line);aspect-ratio:3/4;max-height:66vh}
+  #video{width:100%;height:100%;object-fit:cover;display:block}
+  .guide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .guide .ring{width:64%;aspect-ratio:1;border:2px dashed rgba(126,231,255,.85);border-radius:50%;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.42), inset 0 0 60px rgba(57,211,195,.12)}
+  .guide .hint{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:13px;color:#cfe9f4;
+    text-shadow:0 1px 8px #000}
+  .thumbs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+  .thumb{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:rgba(255,255,255,.04);
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .thumb .lbl{position:absolute;top:7px;left:7px;font-size:11px;font-weight:700;letter-spacing:.6px;
+    background:rgba(0,0,0,.6);padding:3px 8px;border-radius:6px;text-transform:uppercase}
+  .thumb .empty{font-size:12.5px;color:var(--mut);text-align:center;padding:10px}
+  .thumb.done{border-color:rgba(57,211,195,.6)}
+  .overlay{position:fixed;inset:0;background:rgba(4,10,16,.93);display:none;align-items:center;justify-content:center;
+    flex-direction:column;gap:18px;z-index:50;text-align:center;padding:24px}
+  .overlay.on{display:flex}
+  .spin{width:64px;height:64px;border-radius:50%;border:3px solid rgba(255,255,255,.15);
+    border-top-color:var(--acc);animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .step{font-size:13px;letter-spacing:.5px;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
+  #err{display:none;margin:0 0 12px}
+</style>
+{% endblock %}
+{% block body %}
+
+<span class="pill">Step 2 of 3</span>
+<h1>Take two eye photos</h1>
+<p class="lede" id="instruction">Bright light. Look straight at the camera. Hold still — we take the photo when it is sharp.</p>
+
+<div id="err" class="card" style="border-color:rgba(255,123,123,.5)"><div class="err" id="errmsg"></div></div>
+
+<div class="stage">
+  <video id="video" playsinline autoplay muted></video>
+  <div class="guide">
+    <div class="ring"></div>
+    <div class="hint" id="hint">Fill the circle with your <strong>right</strong> eye</div>
+  </div>
+</div>
+
+<div class="thumbs">
+  <div class="thumb" id="thumb-right"><span class="empty">Right eye<br>not taken</span></div>
+  <div class="thumb" id="thumb-left"><span class="empty">Left eye<br>not taken</span></div>
+</div>
+
+<div class="row" style="margin-bottom:10px">
+  <button class="btn" id="shoot" style="flex:1">Capture right eye</button>
+  <button class="btn ghost small" id="flip" type="button">Flip camera</button>
+</div>
+
+<div class="row">
+  <button class="btn ghost small" id="uploadBtn" type="button">Use a photo instead</button>
+  <input type="file" id="fileInput" accept="image/*" style="display:none">
+  <button class="btn ghost small" id="analyze" type="button" disabled>Analyse both eyes →</button>
+</div>
+
+<p class="tiny muted" style="margin-top:14px">
+  Photos are stored privately and deleted after 30 days. {{ disclaimer }}
+</p>
+
+<div class="overlay" id="overlay">
+  <div class="spin"></div>
+  <div>
+    <div class="step" id="ovstep">Reading your sclera</div>
+    <div class="tiny muted" id="ovsub">This takes 20–40 seconds. Do not close the tab.</div>
+  </div>
+</div>
+
+<script>
+const state = {right:null, left:null, facing:'user', stream:null};
+const video = document.getElementById('video');
+const errBox = document.getElementById('err'), errMsg = document.getElementById('errmsg');
+const shootBtn = document.getElementById('shoot'), analyzeBtn = document.getElementById('analyze');
+const hint = document.getElementById('hint'), instr = document.getElementById('instruction');
+
+function showErr(m){ errMsg.textContent = m; errBox.style.display='block'; }
+function clearErr(){ errBox.style.display='none'; }
+
+async function startCam(){
+  try{
+    if(state.stream) state.stream.getTracks().forEach(t=>t.stop());
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:state.facing, width:{ideal:1920}, height:{ideal:1440}}, audio:false});
+    video.srcObject = state.stream;
+    clearErr();
+  }catch(e){
+    showErr('No camera access: ' + e.message + ' — you can still use "Use a photo instead".');
+  }
+}
+
+function nextEye(){ return state.right ? (state.left ? 'done' : 'left') : 'right'; }
+
+function refresh(){
+  const n = nextEye();
+  if(n==='right'){ shootBtn.textContent='Capture right eye'; hint.innerHTML='Fill the circle with your <strong>right</strong> eye'; instr.textContent='Bright light. Look straight at the camera. Take your right eye first.'; }
+  else if(n==='left'){ shootBtn.textContent='Capture left eye'; hint.innerHTML='Now the <strong>left</strong> eye'; instr.textContent='Good. Now the left eye — same distance, same light.'; }
+  else { shootBtn.textContent='Retake right eye'; hint.innerHTML='Both eyes captured ✓'; instr.textContent='Both eyes captured. Analyse when you are ready, or retake either one.'; }
+  analyzeBtn.disabled = !(state.right && state.left);
+  document.getElementById('thumb-right').classList.toggle('done', !!state.right);
+  document.getElementById('thumb-left').classList.toggle('done', !!state.left);
+}
+
+function cropToDataURL(srcCanvas){
+  // centre square crop around the guide, then normalise size
+  const w = srcCanvas.width, h = srcCanvas.height;
+  const side = Math.min(w,h) * 0.78;
+  const cx = w/2, cy = h/2 - h*0.02;
+  const sx = Math.max(0, cx - side/2), sy = Math.max(0, cy - side/2);
+  const out = document.createElement('canvas');
+  const TARGET = 1024;
+  out.width = TARGET; out.height = TARGET;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(srcCanvas, sx, sy, Math.min(side, w-sx), Math.min(side, h-sy), 0,0, TARGET, TARGET);
+  return out.toDataURL('image/jpeg', 0.92);
+}
+
+function grab(){
+  if(!video.videoWidth){ showErr('Camera not ready yet — give it a second.'); return; }
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video,0,0);
+  const data = cropToDataURL(c);
+  const which = state.right ? (state.left ? 'right' : 'left') : 'right';
+  state[which] = data;
+  const t = document.getElementById('thumb-'+which);
+  t.innerHTML = '<span class="lbl">'+which+'</span><img src="'+data+'" alt="">';
+  refresh();
+}
+
+shootBtn.addEventListener('click', grab);
+document.getElementById('flip').addEventListener('click', ()=>{ state.facing = state.facing==='user'?'environment':'user'; startCam(); });
+
+document.getElementById('uploadBtn').addEventListener('click', ()=>document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', ev=>{
+  const f = ev.target.files[0]; if(!f) return;
+  const img = new Image();
+  img.onload = ()=>{
+    const c = document.createElement('canvas'); c.width=img.width; c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    const data = cropToDataURL(c);
+    const which = state.right ? (state.left ? 'right' : 'left') : 'right';
+    state[which] = data;
+    document.getElementById('thumb-'+which).innerHTML = '<span class="lbl">'+which+'</span><img src="'+data+'">';
+    refresh();
+  };
+  img.src = URL.createObjectURL(f);
+});
+
+analyzeBtn.addEventListener('click', async ()=>{
+  if(!(state.right && state.left)) return;
+  document.getElementById('overlay').classList.add('on');
+  clearErr();
+  const steps = ['Checking photo quality', 'Mapping sclera zones', 'Reading each eye', 'Writing your report'];
+  let i=0;
+  const tick = setInterval(()=>{ i=(i+1)%steps.length; document.getElementById('ovstep').textContent = steps[i]; }, 6500);
+  try{
+    const res = await fetch('/api/scan', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({right: state.right, left: state.left})});
+    const data = await res.json();
+    clearInterval(tick);
+    if(!res.ok || !data.scan_id){ throw new Error(data.error || 'analysis failed'); }
+    window.location = '/report/' + data.scan_id;
+  }catch(e){
+    clearInterval(tick);
+    document.getElementById('overlay').classList.remove('on');
+    showErr(e.message || 'Something went wrong. Try again.');
+  }
+});
+
+startCam(); refresh();
+</script>
+{% endblock %}

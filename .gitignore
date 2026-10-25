@@ -1,0 +1,7 @@
+data/
+.admin_key
+__pycache__/
+*.pyc
+server.log
+server.pid
+test_img/

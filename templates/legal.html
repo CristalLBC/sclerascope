@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}{{ {'terms':'Terms of Service','privacy':'Privacy Policy','waiver':'Waiver of Liability'}[kind] }} — ScleraScope{% endblock %}
+{% block body %}
+
+{% set titles = {'terms':'Terms of Service','privacy':'Privacy Policy','waiver':'Waiver of Liability & Assumption of Risk'} %}
+<span class="pill">Legal · version {{ waiver_version }}</span>
+<h1>{{ titles[kind] }}</h1>
+
+{% if kind == 'waiver' %}
+<div class="card">
+  <h2>1. What ScleraScope is</h2>
+  <p class="tiny">ScleraScope ("the App") is a wellness and educational tool that analyses photographs of the
+  user's eyes and reports visual observations together with interpretations drawn from traditional
+  sclerology, a complementary practice. The App is not a medical device, has not been cleared or approved
+  by the U.S. Food and Drug Administration or any other regulator, and is not intended to diagnose, treat,
+  cure, or prevent any disease or condition.</p>
+
+  <h2>2. Assumption of risk</h2>
+  <p class="tiny">I understand and voluntarily accept that: (a) sclerology has limited scientific support and
+  its interpretations may be inaccurate; (b) photographic analysis can miss conditions that only a clinical
+  examination can detect; (c) results are provided for curiosity and general wellness education; and
+  (d) I will not delay, skip, or alter professional medical care because of anything the App reports.</p>
+
+  <h2>3. Release and waiver</h2>
+  <p class="tiny">To the fullest extent permitted by law, I release, waive, and hold harmless ScleraScope, its
+  owners, operators, contractors, and affiliates from any claim, demand, or liability arising from my use of
+  the App or reliance on its output, including any claim relating to a health outcome.</p>
+
+  <h2>4. Indemnification</h2>
+  <p class="tiny">I agree to indemnify and defend the released parties against any claim brought by me or on my
+  behalf that arises out of my use of the App, except to the extent caused by gross negligence or wilful
+  misconduct.</p>
+
+  <h2>5. Emergency instructions</h2>
+  <p class="tiny">If I experience eye pain, sudden vision change or loss, new flashes or floaters, a very red and
+  light-sensitive eye, yellowing of the skin, or an eye injury or chemical exposure, I will contact a physician,
+  eye care professional, or emergency services immediately rather than relying on the App.</p>
+
+  <h2>6. Age</h2>
+  <p class="tiny">I confirm I am 18 years of age or older and legally able to enter into this waiver.</p>
+
+  <h2>7. Governing law</h2>
+  <p class="tiny">This waiver is governed by the laws of the State of California, USA, without regard to conflict
+  of law rules.</p>
+</div>
+
+{% elif kind == 'privacy' %}
+<div class="card">
+  <h2>What we collect</h2>
+  <ul class="tiny">
+    <li><strong>Two eye photographs per scan</strong> — the images you take in the App.</li>
+    <li><strong>The analysis output</strong> — the structured observations and your generated report.</li>
+    <li><strong>Consent record</strong> — timestamp, waiver version, IP address, browser string, and the
+    optional name and email you enter. This exists so there is a record that you agreed to the waiver.</li>
+    <li><strong>Purchase data</strong> — the code used to unlock a report.</li>
+  </ul>
+
+  <h2>How the photos are used</h2>
+  <p class="tiny">Your photos are sent over HTTPS to our analysis provider (Google's Gemini API) purely to produce
+  your report. They are stored on our server only so your report can be displayed, and they are deleted
+  automatically after 30 days. Reports are also removed on the same schedule unless you ask us to keep them.</p>
+
+  <h2>What we never do</h2>
+  <ul class="tiny">
+    <li>We do not sell your photos, your report, or your contact details.</li>
+    <li>We do not use your photos to train models.</li>
+    <li>We do not post anything to social media.</li>
+    <li>We do not share data with advertisers.</li>
+  </ul>
+
+  <h2>Deletion</h2>
+  <p class="tiny">Email {{ support }} with the scan ID shown on your report and we will delete the photos and the
+  report. Deletion is normally completed within 7 days.</p>
+
+  <h2>Security</h2>
+  <p class="tiny">Transport is encrypted (HTTPS). Access to stored scans is restricted to the operator. No system is
+  perfectly secure; do not upload images you are not comfortable transmitting.</p>
+
+  <h2>Children</h2>
+  <p class="tiny">The App is for adults 18 and over. We do not knowingly collect data from anyone under 18.</p>
+
+  <h2>Contact</h2>
+  <p class="tiny">{{ support }}</p>
+</div>
+
+{% else %}
+<div class="card">
+  <h2>1. Acceptance</h2>
+  <p class="tiny">By using ScleraScope you agree to these Terms, the Privacy Policy, and the Waiver of Liability.</p>
+
+  <h2>2. Not medical advice</h2>
+  <p class="tiny">Nothing in the App is medical advice, a diagnosis, a treatment plan, or a substitute for a
+  licensed professional. The App reports visual observations from a photograph and traditional sclerology
+  interpretations. Both can be wrong.</p>
+
+  <h2>3. Your responsibilities</h2>
+  <ul class="tiny">
+    <li>Use only photographs of your own eyes, or of someone who has consented to the scan.</li>
+    <li>Do not upload images of other people without their permission.</li>
+    <li>Do not rely on the App for any health decision.</li>
+  </ul>
+
+  <h2>4. Purchases</h2>
+  <p class="tiny">Unlock codes grant access to a full report or to a period of unlimited scans, as described at the
+  point of sale. Codes are personal and non-transferable. Because a report is delivered digitally and
+  immediately, sales are final except where required by law; if a scan failed for technical reasons we will
+  re-issue or refund it.</p>
+
+  <h2>5. Availability and changes</h2>
+  <p class="tiny">The App is provided "as is" without warranties of any kind. We may change, suspend, or
+  discontinue features at any time. We may update these Terms; the waiver version on your consent record shows
+  which version you agreed to.</p>
+
+  <h2>6. Limitation of liability</h2>
+  <p class="tiny">To the maximum extent permitted by law, our total liability for any claim relating to the App is
+  limited to the amount you paid us in the 12 months before the claim.</p>
+
+  <h2>7. Intellectual property</h2>
+  <p class="tiny">The App, its text, and its design belong to ScleraScope. Your photographs belong to you; you grant
+  us the limited licence needed to analyse them and show you the result.</p>
+
+  <h2>8. Contact</h2>
+  <p class="tiny">{{ support }}</p>
+</div>
+{% endif %}
+
+<p class="tiny muted"><a href="/start">← back to consent</a></p>
+
+{% endblock %}

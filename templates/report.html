@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Your sclera report — ScleraScope{% endblock %}
+{% block head %}
+<style>
+  .rep{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  .rep h3{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 8px}
+  .sev{font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:6px;
+    background:rgba(255,255,255,.09);color:var(--mut);font-weight:700}
+  .sev.moderate,.sev.marked,.sev.high{background:rgba(255,185,94,.18);color:var(--warn)}
+  .tag{font-size:11px;color:var(--acc);border:1px solid rgba(57,211,195,.35);border-radius:999px;padding:2px 8px}
+  .lock{position:relative;overflow:hidden;border-radius:16px;border:1px dashed rgba(126,231,255,.4);
+    background:rgba(126,231,255,.05);padding:24px;text-align:center;margin-bottom:14px}
+  .ghosttext{filter:blur(6px);opacity:.5;font-size:13px;line-height:1.7;user-select:none;margin-bottom:14px}
+  .zonebar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13.5px}
+  .zonebar .name{flex:1}
+  .zonebar .dots{letter-spacing:2px;color:var(--acc)}
+  .sum p{font-size:16px}
+  .eyehead{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+  .mini{font-size:12px;color:var(--mut)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:620px){.two{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block body %}
+
+<span class="pill">Step 3 of 3 · scan {{ r.scan_id }}</span>
+<h1>Your sclera report</h1>
+<p class="tiny muted">
+  {{ r.created_at }} · analysed in {{ r.elapsed_s }}s · waiver {{ r.waiver_version }}
+  {% if not unlocked %}· <span class="badge gray">free preview</span>{% else %}· <span class="badge">unlocked</span>{% endif %}
+</p>
+
+{% if r.unreadable %}
+<div class="warn danger">
+  <h3>One photo could not be read</h3>
+  <p class="tiny" style="margin:0">
+    {% for s in r.unreadable %}The {{ s }} eye photo was not usable ({{ r.per_eye[s].reasons | join(', ') or 'unclear' }}).{% endfor %}
+    You can <a href="/capture">retake it</a> — better light and holding closer helps a lot.
+  </p>
+</div>
+{% endif %}
+
+{% if r.needs_pro %}
+<div class="warn">
+  <h3>Worth showing a professional</h3>
+  <p class="tiny" style="margin:0 0 8px">One or more findings on this list is something an eye doctor or physician can actually examine — a photo cannot rule it out.</p>
+  <ul class="tiny" style="margin:0">
+    {% for f in r.needs_pro %}
+    <li><strong>{{ f.eye | capitalize }} eye · {{ f.label }}</strong> — {{ f.objective }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{% if r.summary %}
+<div class="card sum">
+  <h2>The short version</h2>
+  {% for para in r.summary.split('\n') if para.strip() %}
+    <p>{{ para.strip() }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>What the photos actually show</h2>
+  <div class="two">
+  {% for side in ['right','left'] %}
+    {% set e = r.per_eye[side] %}
+    <div>
+      <div class="eyehead">
+        <strong>{{ side | capitalize }} eye</strong>
+        <span class="tag">{{ e.iris.color or 'iris n/a' }}</span>
+        {% if e.usable %}<span class="badge">read</span>{% else %}<span class="badge gray">unusable</span>{% endif %}
+      </div>
+      <p class="mini" style="margin-bottom:6px">Sclera base colour: <strong>{{ e.sclera_base_color }}</strong></p>
+      {% if e.findings %}
+      <ul class="mini" style="padding-left:18px">
+        {% for f in e.findings %}
+        <li><strong>{{ f.label }}</strong>{% if f.severity %} ({{ f.severity }}){% endif %} — {{ f.what_we_see }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mini muted">No discrete markings detected in this photo.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+  </div>
+</div>
+
+{% if unlocked %}
+<div class="card">
+  <h2>Your sclera zone map</h2>
+  <p class="tiny muted">Traditional sclerology divides the white of the eye into zones. These are the zones your markings fall in,
+  ranked by how much they showed up.</p>
+  {% if r.zones %}
+    {% for z in r.zones %}
+    <div class="zonebar">
+      <span class="name"><strong>{{ z.name }}</strong><br><span class="mini muted">traditionally: {{ z.trad_organs }}</span></span>
+      <span class="dots">{% for i in range(z.count) %}●{% endfor %}</span>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="mini muted">No zones were flagged — your report is mostly a clean read.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>The traditional reading</h2>
+  <p class="tiny muted">Every line below is a traditional sclerology interpretation, not a medical finding.</p>
+  {% for f in r.findings %}
+  <div class="rep">
+    <h3>{{ f.eye | capitalize }} eye · {{ f.label }} <span class="sev {{ f.severity }}">{{ f.severity }}</span></h3>
+    <p class="mini" style="margin-bottom:8px"><strong>Seen:</strong> {{ f.what_we_see }}</p>
+    <p class="mini" style="margin-bottom:8px;color:var(--acc2)">{{ f.trad }}</p>
+    <p class="mini muted" style="margin:0"><strong>What it usually means for real:</strong> {{ f.objective }}</p>
+  </div>
+  {% endfor %}
+  {% if not r.findings %}
+    <p class="mini muted">Nothing discrete to interpret. That is a good result — not a guarantee.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Focus areas for the next 7 days</h2>
+  <p class="tiny muted">Practical, boring, free things — matched to the zones that lit up.</p>
+  {% for f in r.focus %}
+  <div class="rep">
+    <h3>{{ f.zone }}</h3>
+    <p class="mini muted" style="margin-bottom:8px">traditionally linked to {{ f.trad }}</p>
+    <ul class="mini" style="margin:0;padding-left:18px">
+      {% for tip in f.tips %}<li>{{ tip }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+  {% if not r.focus %}
+    <p class="mini muted">Nothing stood out. Sleep, water, sunglasses, and a yearly eye exam — that is the whole plan.</p>
+  {% endif %}
+</div>
+
+<div class="card tight">
+  <h2>Compare your next scan</h2>
+  <p class="tiny muted" style="margin:0 0 10px">Markings change slowly. Scan again in 7–30 days in the same light and compare — the trend matters far more than one photo.</p>
+  <a class="btn ghost small" href="/capture">Scan again</a>
+</div>
+
+{% else %}
+
+<div class="lock">
+  <h2>🔒 Full report locked</h2>
+  <div class="ghosttext">
+    Upper sclera — traditionally linked to head, sinuses, nervous system. Redness here is read as…<br>
+    Temporal zone — pigment deposits read as stagnation in the…<br>
+    7-day focus plan matched to your two strongest zones…
+  </div>
+  <p class="tiny" style="margin-bottom:14px">
+    You have {{ r.findings | length }} finding{{ '' if r.findings|length == 1 else 's' }} across
+    {{ r.zones | length }} zone{{ '' if r.zones|length == 1 else 's' }} waiting in the full report:
+    the complete zone map, the traditional reading of every marking, and your 7-day focus plan.
+  </p>
+  <p style="margin-bottom:14px"><strong>${{ price }}</strong> one-time
+    <span class="muted">· or ${{ price_month }}/mo for unlimited scans</span></p>
+  <a class="btn" href="/redeem?scan_id={{ scan_id }}" style="max-width:340px;margin:0 auto">I have a code — unlock</a>
+  <p class="tiny muted" style="margin:12px 0 0">Buying: the checkout link appears here once the store is connected.
+    Questions? {{ support }}</p>
+</div>
+
+{% endif %}
+
+<div class="card tight">
+  <h2>When to see a professional</h2>
+  <p class="tiny muted" style="margin:0 0 8px">Any of these means stop using an app and get a real examination:</p>
+  <ul class="tiny">
+    {% for flag in r.red_flags %}<li>{{ flag }}</li>{% endfor %}
+  </ul>
+</div>
+
+<div class="warn danger">
+  <h3>Disclaimer</h3>
+  <p class="tiny" style="margin:0">{{ disclaimer }}</p>
+</div>
+
+<div class="row" style="margin-top:6px">
+  <button class="btn ghost small" onclick="window.print()">Print / save as PDF</button>
+  <a class="btn ghost small" href="/">Back to start</a>
+</div>
+
+{% endblock %}

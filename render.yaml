@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: sclerascope
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 2 --threads 4 -t 180 -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: FAL.AI_KEY
+        sync: false
+      - key: GOOGLE_AI_API_KEY
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: HTTPS_ONLY
+        value: "1"
+      - key: SUPPORT_EMAIL
+        value: support@dfyai.online
+      - key: PRICE_FULL
+        value: "19"
+      - key: PRICE_MONTH
+        value: "9.99"
+      - key: GUMROAD_PRODUCT_ID
+        sync: false
+    disk:
+      name: sclerascope-data
+      mountPath: /var/data
+      sizeGB: 1

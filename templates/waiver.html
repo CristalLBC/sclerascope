@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Consent & waiver — ScleraScope{% endblock %}
+{% block body %}
+
+<span class="pill">Step 1 of 3</span>
+<h1>Before the camera opens</h1>
+<p class="lede">This is the part most apps hide in 8pt type. Read it properly — it matters.</p>
+
+{% if error %}<div class="card" style="border-color:rgba(255,123,123,.5)"><div class="err">{{ error }}</div></div>{% endif %}
+
+<div class="warn danger">
+  <h3>This is not a medical test</h3>
+  <p class="tiny" style="margin:0">
+    ScleraScope is a wellness and education app. It is <strong>not</strong> a medical device, it is
+    <strong>not</strong> FDA-cleared or approved, and it does <strong>not</strong> diagnose, treat, cure or
+    prevent any disease. It reads a photograph. It cannot see pressure inside your eye, your retina,
+    your optic nerve, or anything behind the surface.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Three things to confirm</h2>
+  <form method="post" action="/start">
+    <label class="chk"><input type="checkbox" name="age" required>
+      <span><strong>I am 18 or older.</strong> This app is not for children.</span></label>
+
+    <label class="chk"><input type="checkbox" name="waiver" required>
+      <span><strong>I accept the waiver of liability and assumption of risk.</strong>
+      I understand sclerology is a traditional practice with little scientific support, that any
+      reading may be wrong, and that I will not use it in place of a licensed professional.</span></label>
+
+    <label class="chk"><input type="checkbox" name="privacy" required>
+      <span><strong>I consent to my eye photos being uploaded and analysed.</strong>
+      They are stored privately, used only to produce my report, and deleted after 30 days.
+      I can ask for deletion any time.</span></label>
+
+    <input type="text" name="name" placeholder="First name (optional)" maxlength="60">
+    <input type="email" name="email" placeholder="Email (optional — only if you want the report link)">
+    <label class="chk"><input type="checkbox" name="marketing">
+      <span class="tiny">Send me occasional eye-wellness notes. No spam, unsubscribe anytime.</span></label>
+
+    <button class="btn" type="submit">I agree — open the camera</button>
+  </form>
+  <p class="tiny muted" style="margin:14px 0 0">
+    Waiver version {{ waiver_version }} · full text:
+    <a href="/waiver-text">waiver</a>, <a href="/terms">terms</a>, <a href="/privacy">privacy</a>.
+  </p>
+</div>
+
+<div class="card tight">
+  <h3>Stop and call a doctor if you have</h3>
+  <p class="tiny muted" style="margin:0">
+    sudden eye pain · sudden vision loss or a shadow across your sight · new flashes or a burst of
+    floaters · a very red, painful, light-sensitive eye · yellowing of your skin along with your eyes ·
+    a chemical splash or something in your eye.
+  </p>
+</div>
+
+{% endblock %}

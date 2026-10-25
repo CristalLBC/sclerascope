@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Unlock your report — ScleraScope{% endblock %}
+{% block body %}
+
+<span class="pill">Unlock</span>
+<h1>Enter your code</h1>
+<p class="lede">Your code came with your purchase email. It unlocks the full zone map, the traditional reading, and your 7-day focus plan.</p>
+
+{% if msg %}<div class="card tight" style="border-color:{{ 'rgba(57,211,195,.6)' if ok else 'rgba(255,123,123,.5)' }}">
+  <p style="margin:0" class="{{ '' if ok else 'err' }}">{{ msg }}</p></div>{% endif %}
+
+<div class="card">
+  <form method="post" action="/redeem">
+    <input type="hidden" name="scan_id" value="{{ scan_id }}">
+    <input type="text" name="code" placeholder="SCL-XXXX-XXXX-XXXX" autocomplete="off" style="text-transform:uppercase">
+    <button class="btn" type="submit">Unlock full report</button>
+  </form>
+  <p class="tiny muted" style="margin:14px 0 0">
+    No code yet? Full report is ${{ price }} one-time, or ${{ price_month }}/month for unlimited scans.
+    Store checkout is being connected — meantime email {{ support }} and we will send a code.
+  </p>
+</div>
+
+<div class="card tight">
+  <h2>What unlocks</h2>
+  <ul class="tiny">
+    <li>The full sclera zone map for both eyes</li>
+    <li>The traditional sclerology reading of every marking</li>
+    <li>Your 7-day focus plan, matched to your zones</li>
+    <li>Print / save-as-PDF of the whole report</li>
+  </ul>
+</div>
+
+{% if scan_id %}<p class="tiny muted"><a href="/report/{{ scan_id }}">← back to my report</a></p>{% endif %}
+
+{% endblock %}

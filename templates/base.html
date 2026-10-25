@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}ScleraScope{% endblock %}</title>
+<meta name="description" content="ScleraScope reads the markings in the white of your eyes the way traditional sclerology does — with honest disclaimers and real eye-health observations.">
+<style>
+  :root{
+    --bg:#070d14; --bg2:#0d1a26; --card:rgba(255,255,255,.055); --line:rgba(255,255,255,.11);
+    --txt:#eaf2f8; --mut:#93a7b8; --acc:#39d3c3; --acc2:#7ee7ff; --warn:#ffb95e; --bad:#ff7b7b;
+    --rad:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+    background:
+      radial-gradient(1100px 620px at 82% -8%, rgba(57,211,195,.16), transparent 62%),
+      radial-gradient(900px 520px at 8% 6%, rgba(126,231,255,.10), transparent 60%),
+      linear-gradient(180deg,var(--bg) 0%, var(--bg2) 55%, #060a10 100%);
+    color:var(--txt); min-height:100vh; -webkit-font-smoothing:antialiased; line-height:1.55;
+  }
+  a{color:var(--acc2);text-decoration:none}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 18px 70px}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+  .iris{width:26px;height:26px;border-radius:50%;
+    background:radial-gradient(circle at 50% 50%, #05121a 0 22%, var(--acc) 24% 46%, #0a2a33 48% 62%, #e9f6ff 64% 100%);
+    box-shadow:0 0 0 1px rgba(255,255,255,.25), 0 0 18px rgba(57,211,195,.55)}
+  .nav small{color:var(--mut);font-size:12.5px}
+  h1{font-size:clamp(28px,7vw,44px);line-height:1.1;margin:.2em 0 .35em;letter-spacing:-.5px}
+  h2{font-size:21px;margin:0 0 10px;letter-spacing:-.2px}
+  h3{font-size:16px;margin:0 0 6px}
+  p{margin:0 0 12px}
+  .lede{color:var(--mut);font-size:17px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--rad);
+    padding:20px;margin:0 0 16px;backdrop-filter:blur(8px)}
+  .card.tight{padding:14px 16px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;
+    background:linear-gradient(135deg,var(--acc),#28b6d8);color:#04222a;font-weight:800;
+    border:0;border-radius:14px;padding:15px 22px;font-size:16.5px;cursor:pointer;width:100%;
+    box-shadow:0 10px 26px rgba(57,211,195,.22);text-decoration:none}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line);box-shadow:none;font-weight:600}
+  .btn.small{padding:10px 14px;font-size:14px;width:auto;border-radius:11px}
+  .btn[disabled]{opacity:.45;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .pill{display:inline-block;font-size:12px;letter-spacing:.4px;text-transform:uppercase;
+    color:var(--acc);border:1px solid rgba(57,211,195,.4);border-radius:999px;padding:4px 10px;margin-bottom:14px}
+  .muted{color:var(--mut)}
+  .tiny{font-size:12.5px;line-height:1.5}
+  ul{margin:0 0 12px;padding-left:20px}
+  li{margin:0 0 7px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}}
+  .stat{font-size:26px;font-weight:800;color:var(--acc2)}
+  label.chk{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;color:var(--txt);
+    background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:10px;cursor:pointer}
+  label.chk input{margin-top:3px;accent-color:var(--acc);width:18px;height:18px;flex:none}
+  input[type=text],input[type=email]{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);
+    background:rgba(0,0,0,.28);color:var(--txt);font-size:15.5px;margin-bottom:10px}
+  .warn{background:rgba(255,185,94,.10);border:1px solid rgba(255,185,94,.4);border-radius:14px;padding:14px 16px;margin:0 0 16px}
+  .warn h3{color:var(--warn)}
+  .danger{background:rgba(255,123,123,.09);border-color:rgba(255,123,123,.38)}
+  .danger h3{color:var(--bad)}
+  .fineprint{font-size:11.5px;color:#7d8fa0;line-height:1.6;border-top:1px solid var(--line);
+    padding-top:14px;margin-top:26px}
+  .foot{text-align:center;font-size:12px;color:#6d7f90;margin-top:22px}
+  .foot a{color:#8fa3b4}
+  .badge{font-size:11px;font-weight:700;letter-spacing:.5px;padding:3px 8px;border-radius:6px;
+    background:rgba(57,211,195,.16);color:var(--acc)}
+  .badge.gray{background:rgba(255,255,255,.08);color:var(--mut)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  code{background:rgba(0,0,0,.35);padding:2px 6px;border-radius:5px;font-size:12.5px}
+  .err{color:var(--bad);font-size:14px;margin-bottom:12px}
+  @media print{
+    body{background:#fff;color:#111}
+    .card{background:#fff;border:1px solid #ccc}
+    .btn,.nav .btn{display:none}
+    .muted,.lede{color:#444}
+  }
+</style>
+{% block head %}{% endblock %}
+</head>
+<body>
+<div class="wrap">
+  <div class="nav">
+    <a class="brand" href="/"><span class="iris"></span> ScleraScope</a>
+    <small>wellness scan · not a diagnosis</small>
+  </div>
+  {% block body %}{% endblock %}
+  <div class="fineprint">
+    <strong>ScleraScope is not a medical device.</strong> It has not been evaluated or approved by the
+    FDA. It does not diagnose, treat, cure or prevent any disease, and it is not a substitute for
+    an examination by a licensed eye care professional or physician. Sclerology is a traditional,
+    complementary practice that has not been validated by scientific research. Photos are stored
+    privately and deleted after 30 days.
+    <br><br>
+    <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a> · <a href="/waiver-text">Waiver</a>
+    · © 2026 ScleraScope
+  </div>
+  <div class="foot">If you have eye pain, sudden vision change, or an injury — call your doctor or emergency services now.</div>
+</div>
+</body>
+</html>

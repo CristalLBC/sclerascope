@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Admin — ScleraScope{% endblock %}
+{% block body %}
+
+<span class="pill">Admin</span>
+<h1>ScleraScope admin</h1>
+
+<div class="grid2">
+  <div class="card tight"><div class="stat">{{ scans|length }}</div><div class="tiny muted">recent scans</div></div>
+  <div class="card tight"><div class="stat">{{ consents }}</div><div class="tiny muted">consent records</div></div>
+</div>
+
+<div class="card">
+  <h2>System</h2>
+  <table>
+    <tr><th>Vision key</th><td>{{ 'set ✓' if vision_key else 'MISSING — set GOOGLE_AI_API_KEY' }}</td></tr>
+    <tr><th>Gumroad product</th><td>{{ gumroad }}</td></tr>
+    <tr><th>Admin key</th><td><code>{{ admin_key }}</code></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Generate unlock codes</h2>
+  <form method="post" action="/admin/make-codes">
+    <div class="grid2">
+      <input type="text" name="n" value="1" placeholder="how many">
+      <input type="text" name="scans" value="5" placeholder="scans per code">
+      <input type="text" name="days" value="0" placeholder="days unlimited (0 = off)">
+      <input type="text" name="note" value="" placeholder="note (e.g. buyer email)">
+    </div>
+    <button class="btn" type="submit">Generate</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Codes</h2>
+  <table>
+    <tr><th>Code</th><th>Left</th><th>Days</th><th>Used</th><th>Note</th></tr>
+    {% for c in codes %}
+    <tr><td><code>{{ c.code }}</code></td><td>{{ c.scans_left }}</td><td>{{ c.days }}</td>
+        <td class="mini">{{ c.used_at or '—' }}</td><td class="mini">{{ c.note }}</td></tr>
+    {% endfor %}
+  </table>
+  {% if not codes %}<p class="mini muted">No codes yet.</p>{% endif %}
+</div>
+
+<div class="card">
+  <h2>Recent scans</h2>
+  <table>
+    <tr><th>Scan</th><th>When</th><th>Unlocked</th><th>Model</th><th>IP</th></tr>
+    {% for s in scans %}
+    <tr><td><a href="/report/{{ s.id }}">{{ s.id }}</a></td><td class="mini">{{ s.created_at }}</td>
+        <td>{{ '✓' if s.unlocked else '—' }}</td><td class="mini">{{ s.model }}</td>
+        <td class="mini">{{ s.ip }}</td></tr>
+    {% endfor %}
+  </table>
+  {% if not scans %}<p class="mini muted">No scans yet.</p>{% endif %}
+</div>
+
+{% endblock %}
