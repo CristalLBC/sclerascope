@@ -5,3 +5,5 @@ __pycache__/
 server.log
 server.pid
 test_img/
+keys.txt
+render_service.json
