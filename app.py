@@ -22,8 +22,22 @@ import sclerology
 import vision
 
 ROOT = Path(__file__).parent
-# On Render the disk is mounted elsewhere; local dev just uses ./data
-DATA = Path(os.environ.get("DATA_DIR") or (ROOT / "data"))
+
+
+def _default_data_dir() -> Path:
+    """Prefer a persistent disk when one is mounted.
+
+    Render blueprints mount the persistent disk at /var/data. If DATA_DIR is
+    not set we must still use that mount, otherwise SQLite and the photos land
+    on the ephemeral filesystem and every restart wipes scans and unlock codes.
+    """
+    for cand in (os.environ.get("DATA_DIR"), "/var/data"):
+        if cand and Path(cand).is_dir() and os.access(cand, os.W_OK):
+            return Path(cand)
+    return ROOT / "data"
+
+
+DATA = _default_data_dir()
 SCANS_DIR = DATA / "scans"
 DB_PATH = DATA / "sclerascope.db"
 WAIVER_VERSION = "2026-10-25"
@@ -412,7 +426,8 @@ def admin_purge():
 
 @app.route("/healthz")
 def healthz():
-    return jsonify({"ok": True, "vision_key": bool(vision.GEMINI_KEY), "t": now()})
+    return jsonify({"ok": True, "vision_key": bool(vision.GEMINI_KEY), "t": now(),
+                    "data_dir": str(DATA), "persistent": str(DATA) != str(ROOT / "data")})
 
 
 # ------------------------------------------------------------------- admin ---
