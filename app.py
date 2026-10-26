@@ -351,13 +351,16 @@ def redeem():
 
 
 def normalize_code(raw):
-    """Make codes forgiving: no spaces, upper case, and accept a missing SCL- prefix."""
-    c = (raw or "").strip().upper().replace(" ", "").replace("_", "")
-    if c and not c.startswith("SCL-") and re.fullmatch(r"[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}", c):
-        maybe = "SCL-" + c
-        if db().execute("SELECT 1 FROM codes WHERE code=?", (maybe,)).fetchone():
-            return maybe
-    return c
+    """Make codes forgiving: any spacing or case, and accept a missing SCL- prefix.
+
+    Only 12-hex-character inputs are rebuilt into the SCL- form, so Gumroad
+    license keys (which are longer and mixed-case) pass through untouched.
+    """
+    compact = re.sub(r"[^A-Z0-9]", "", (raw or "").upper())
+    if re.fullmatch(r"[0-9A-F]{12}", compact):
+        rebuilt = "SCL-" + "-".join(compact[i:i + 4] for i in (0, 4, 8))
+        return rebuilt
+    return (raw or "").strip().upper().replace(" ", "")
 
 
 def check_code(code):
