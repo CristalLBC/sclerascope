@@ -357,9 +357,9 @@ def normalize_code(raw):
     license keys (which are longer and mixed-case) pass through untouched.
     """
     compact = re.sub(r"[^A-Z0-9]", "", (raw or "").upper())
-    if re.fullmatch(r"[0-9A-F]{12}", compact):
-        rebuilt = "SCL-" + "-".join(compact[i:i + 4] for i in (0, 4, 8))
-        return rebuilt
+    body = compact[3:] if compact.startswith("SCL") else compact
+    if re.fullmatch(r"[0-9A-F]{12}", body):
+        return "SCL-" + "-".join(body[i:i + 4] for i in (0, 4, 8))
     return (raw or "").strip().upper().replace(" ", "")
 
 
