@@ -11,12 +11,15 @@
     text-shadow:0 1px 8px #000}
   .thumbs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
   .thumb{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:rgba(255,255,255,.04);
-    aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+    aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s, box-shadow .15s}
   .thumb img{width:100%;height:100%;object-fit:cover}
   .thumb .lbl{position:absolute;top:7px;left:7px;font-size:11px;font-weight:700;letter-spacing:.6px;
     background:rgba(0,0,0,.6);padding:3px 8px;border-radius:6px;text-transform:uppercase}
   .thumb .empty{font-size:12.5px;color:var(--mut);text-align:center;padding:10px}
   .thumb.done{border-color:rgba(57,211,195,.6)}
+  .thumb.active{border-color:var(--acc);box-shadow:0 0 0 2px rgba(57,211,195,.45)}
+  .thumb .tgt{position:absolute;bottom:0;left:0;right:0;font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;
+    background:rgba(57,211,195,.92);color:#04202a;font-weight:700;padding:3px 0;text-align:center}
   .overlay{position:fixed;inset:0;background:rgba(4,10,16,.93);display:none;align-items:center;justify-content:center;
     flex-direction:column;gap:18px;z-index:50;text-align:center;padding:24px}
   .overlay.on{display:flex}
@@ -44,9 +47,10 @@
 </div>
 
 <div class="thumbs">
-  <div class="thumb" id="thumb-right"><span class="empty">Right eye<br>not taken</span></div>
-  <div class="thumb" id="thumb-left"><span class="empty">Left eye<br>not taken</span></div>
+  <div class="thumb" id="thumb-right" data-eye="right"><span class="empty">Right eye<br>not taken</span></div>
+  <div class="thumb" id="thumb-left" data-eye="left"><span class="empty">Left eye<br>not taken</span></div>
 </div>
+<p class="tiny muted" id="tapnote" style="margin:-4px 0 12px">Tap a photo to choose which eye the next shot replaces.</p>
 
 <div class="row" style="margin-bottom:10px">
   <button class="btn" id="shoot" style="flex:1">Capture right eye</button>
@@ -72,7 +76,7 @@
 </div>
 
 <script>
-const state = {right:null, left:null, facing:'user', stream:null};
+const state = {right:null, left:null, facing:'user', stream:null, target:'right'};
 const video = document.getElementById('video');
 const errBox = document.getElementById('err'), errMsg = document.getElementById('errmsg');
 const shootBtn = document.getElementById('shoot'), analyzeBtn = document.getElementById('analyze');
@@ -93,17 +97,49 @@ async function startCam(){
   }
 }
 
-function nextEye(){ return state.right ? (state.left ? 'done' : 'left') : 'right'; }
+function nextEye(){
+  // Which eye should the shutter fill? Prefer an empty slot, else keep the chosen target.
+  if(!state.right) return 'right';
+  if(!state.left) return 'left';
+  return state.target || 'right';
+}
 
 function refresh(){
-  const n = nextEye();
-  if(n==='right'){ shootBtn.textContent='Capture right eye'; hint.innerHTML='Fill the circle with your <strong>right</strong> eye'; instr.textContent='Bright light. Look straight at the camera. Take your right eye first.'; }
-  else if(n==='left'){ shootBtn.textContent='Capture left eye'; hint.innerHTML='Now the <strong>left</strong> eye'; instr.textContent='Good. Now the left eye — same distance, same light.'; }
-  else { shootBtn.textContent='Retake right eye'; hint.innerHTML='Both eyes captured ✓'; instr.textContent='Both eyes captured. Analyse when you are ready, or retake either one.'; }
+  const t = nextEye();
+  state.target = t;
+  const has = !!state[t];
+  const word = t === 'right' ? 'right' : 'left';
+  if(!state.right || !state.left){
+    shootBtn.textContent = (has ? 'Retake ' : 'Capture ') + word + ' eye';
+    hint.innerHTML = 'Fill the circle with your <strong>' + word + '</strong> eye';
+    instr.textContent = state.right
+      ? 'Good. Now the left eye — same distance, same light.'
+      : 'Bright light. Look straight at the camera. Take your right eye first.';
+  } else {
+    shootBtn.textContent = 'Retake ' + word + ' eye';
+    hint.innerHTML = 'Replacing the <strong>' + word + '</strong> eye — tap the other photo to switch';
+    instr.textContent = 'Both eyes captured. Analyse when you are ready, or tap a photo and retake just that eye.';
+  }
   analyzeBtn.disabled = !(state.right && state.left);
-  document.getElementById('thumb-right').classList.toggle('done', !!state.right);
-  document.getElementById('thumb-left').classList.toggle('done', !!state.left);
+  ['right','left'].forEach(function(side){
+    const el = document.getElementById('thumb-'+side);
+    el.classList.toggle('done', !!state[side]);
+    el.classList.toggle('active', side === t);
+    let tag = el.querySelector('.tgt');
+    if(side === t){
+      if(!tag){ tag = document.createElement('span'); tag.className = 'tgt'; el.appendChild(tag); }
+      tag.textContent = 'next shot';
+    } else if(tag){ tag.remove(); }
+  });
 }
+
+// Tapping a photo chooses which eye the next shot replaces.
+['right','left'].forEach(function(side){
+  document.getElementById('thumb-'+side).addEventListener('click', function(){
+    state.target = side;
+    refresh();
+  });
+});
 
 function cropToDataURL(srcCanvas){
   // centre square crop around the guide, then normalise size
@@ -125,10 +161,11 @@ function grab(){
   c.width = video.videoWidth; c.height = video.videoHeight;
   c.getContext('2d').drawImage(video,0,0);
   const data = cropToDataURL(c);
-  const which = state.right ? (state.left ? 'right' : 'left') : 'right';
+  const which = state.target || nextEye();
   state[which] = data;
+  const lbl = which.charAt(0).toUpperCase() + which.slice(1);
   const t = document.getElementById('thumb-'+which);
-  t.innerHTML = '<span class="lbl">'+which+'</span><img src="'+data+'" alt="">';
+  t.innerHTML = '<span class="lbl">'+lbl+'</span><img src="'+data+'" alt="">';
   refresh();
 }
 
@@ -143,9 +180,10 @@ document.getElementById('fileInput').addEventListener('change', ev=>{
     const c = document.createElement('canvas'); c.width=img.width; c.height=img.height;
     c.getContext('2d').drawImage(img,0,0);
     const data = cropToDataURL(c);
-    const which = state.right ? (state.left ? 'right' : 'left') : 'right';
+    const which = state.target || nextEye();
     state[which] = data;
-    document.getElementById('thumb-'+which).innerHTML = '<span class="lbl">'+which+'</span><img src="'+data+'">';
+    document.getElementById('thumb-'+which).innerHTML =
+      '<span class="lbl">' + which.charAt(0).toUpperCase() + which.slice(1) + '</span><img src="'+data+'">';
     refresh();
   };
   img.src = URL.createObjectURL(f);
