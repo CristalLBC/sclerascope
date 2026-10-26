@@ -350,8 +350,19 @@ def redeem():
                            price=PRICE_FULL, price_month=PRICE_MONTH, support=SUPPORT_EMAIL)
 
 
+def normalize_code(raw):
+    """Make codes forgiving: no spaces, upper case, and accept a missing SCL- prefix."""
+    c = (raw or "").strip().upper().replace(" ", "").replace("_", "")
+    if c and not c.startswith("SCL-") and re.fullmatch(r"[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}", c):
+        maybe = "SCL-" + c
+        if db().execute("SELECT 1 FROM codes WHERE code=?", (maybe,)).fetchone():
+            return maybe
+    return c
+
+
 def check_code(code):
     """Local codes first, then Gumroad license verification if configured."""
+    code = normalize_code(code)
     row = db().execute("SELECT * FROM codes WHERE code=?", (code,)).fetchone()
     if row:
         if row["used_at"] and (row["scans_left"] or 0) <= 0:
@@ -362,6 +373,7 @@ def check_code(code):
         db().commit()
         return {"ok": True, "days": row["days"] or 0}
     if GUMROAD_PRODUCT_ID:
+        import urllib.error
         import urllib.parse
         import urllib.request
         try:
@@ -376,9 +388,15 @@ def check_code(code):
                 if purchase.get("refunded") or purchase.get("chargebacked"):
                     return {"ok": False, "error": "That license was refunded."}
                 return {"ok": True, "days": 365}
+            return {"ok": False, "error": "That code is not valid. Check for typos — it looks like SCL-1234-5678-9ABC."}
+        except urllib.error.HTTPError as e:
+            # Gumroad answers 404 for a key it doesn't know — that is a typo, not an outage.
+            if e.code == 404:
+                return {"ok": False, "error": "That code is not valid. Check for typos — it looks like SCL-1234-5678-9ABC."}
+            return {"ok": False, "error": "The license server didn't answer. Try again in a minute."}
         except Exception:
-            return {"ok": False, "error": "Could not verify that code right now. Try again in a minute."}
-    return {"ok": False, "error": "That code is not valid."}
+            return {"ok": False, "error": "The license server didn't answer. Try again in a minute."}
+    return {"ok": False, "error": "That code is not valid. Check for typos — it looks like SCL-1234-5678-9ABC."}
 
 
 @app.route("/terms")
