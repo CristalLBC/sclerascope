@@ -17,8 +17,11 @@
   </form>
   <p class="tiny muted" style="margin:14px 0 0">
     No code yet? Full report is ${{ price }} one-time, or ${{ price_month }}/month for unlimited scans.
-    Store checkout is being connected — meantime email {{ support }} and we will send a code.
   </p>
+  <a class="btn" href="{{ buy_url }}" target="_blank" rel="noopener"
+     style="margin-top:10px;display:block;text-align:center">Buy the full report — ${{ price }}</a>
+  <p class="tiny muted" style="margin:10px 0 0">Your license key arrives instantly by email and
+    unlocks the report here. Questions? {{ support }}</p>
 </div>
 
 <div class="card tight">

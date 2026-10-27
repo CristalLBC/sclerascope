@@ -43,7 +43,9 @@ DB_PATH = DATA / "sclerascope.db"
 WAIVER_VERSION = "2026-10-25"
 PRICE_FULL = os.environ.get("PRICE_FULL", "19")
 PRICE_MONTH = os.environ.get("PRICE_MONTH", "9.99")
-GUMROAD_PRODUCT_ID = os.environ.get("GUMROAD_PRODUCT_ID", "").strip()
+GUMROAD_PRODUCT_ID = (os.environ.get("GUMROAD_PRODUCT_ID", "").strip()
+                      or "c5yl87szJCAT-gHVEnBAxQ==")  # live Gumroad product (env overrides)
+BUY_URL = os.environ.get("BUY_URL", "https://cristalhustler.gumroad.com/l/sclerascope-full-report")
 SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "support@dfyai.online")
 FREE_SCANS = int(os.environ.get("FREE_SCANS", "1"))
 
@@ -51,6 +53,14 @@ DATA.mkdir(exist_ok=True)
 SCANS_DIR.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
+
+
+@app.context_processor
+def _inject_store():
+    """Make the Gumroad checkout link available to every template."""
+    return dict(buy_url=BUY_URL, price_full=PRICE_FULL, price_month=PRICE_MONTH,
+                support_email=SUPPORT_EMAIL)
+
 app.config["MAX_CONTENT_LENGTH"] = 24 * 1024 * 1024
 _secret_file = DATA / "secret_key"
 if not _secret_file.exists():
