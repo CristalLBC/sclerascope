@@ -239,7 +239,7 @@ def api_scan():
     for side in ("right", "left"):
         fs = sclerology.build_findings(obs[side], side)
         all_findings += fs
-        trad_lines += [f["trad"] for f in fs]
+        trad_lines += [f["trad"] for f in fs if f.get("trad")]
     needs_pro = [f for f in all_findings if f["needs_pro"]]
     unreadable = [s for s in ("right", "left") if not obs[s].get("usable")]
 

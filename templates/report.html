@@ -111,7 +111,7 @@
   <div class="rep">
     <h3>{{ f.eye | capitalize }} eye · {{ f.label }} <span class="sev {{ f.severity }}">{{ f.severity }}</span></h3>
     <p class="mini" style="margin-bottom:8px"><strong>Seen:</strong> {{ f.what_we_see }}</p>
-    <p class="mini" style="margin-bottom:8px;color:var(--acc2)">{{ f.trad }}</p>
+    {% if f.trad %}<p class="mini" style="margin-bottom:8px;color:var(--acc2)">{{ f.trad }}</p>{% endif %}
     <p class="mini muted" style="margin:0"><strong>What it usually means for real:</strong> {{ f.objective }}</p>
   </div>
   {% endfor %}
@@ -153,7 +153,7 @@
     7-day focus plan matched to your two strongest zones…
   </div>
   <p class="tiny" style="margin-bottom:14px">
-    You have {{ r.findings | length }} finding{{ '' if r.findings|length == 1 else 's' }} across
+    You have {{ r.counts.sclera }} finding{{ '' if r.counts.sclera == 1 else 's' }} across
     {{ r.zones | length }} zone{{ '' if r.zones|length == 1 else 's' }} waiting in the full report:
     the complete zone map, the traditional reading of every marking, and your 7-day focus plan.
   </p>

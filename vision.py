@@ -45,6 +45,9 @@ Rules:
 - Describe appearance, never diagnose. Do NOT name diseases or conditions.
 - If something is not clearly visible, set present=false and confidence="low". Never guess.
 - Be conservative: a marking counts only if you can actually see it.
+- brown_spots are on the WHITE of the eye (the sclera) only. Freckles or pigment on the
+  iris (the coloured ring around the pupil) do NOT go in brown_spots — mention them in
+  iris.notes instead.
 
 Return STRICT JSON, exactly this shape:
 {

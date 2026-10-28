@@ -66,6 +66,22 @@ ZONES = {
     },
 }
 
+# Read-out phrase per zone. ZONES[...]["name"] are UI headings ("Near the iris
+# edge"), which produced prose like "pigment in the near the iris edge zone".
+ZONE_PHRASES = {
+    "upper": "upper sclera",
+    "lower": "lower sclera",
+    "nasal": "nasal sclera",
+    "temporal": "temporal sclera",
+    "near_iris": "sclera right around the iris",
+    "whole": "whole sclera",
+}
+
+
+def zone_phrase(z: str) -> str:
+    return ZONE_PHRASES.get(z, "whole sclera")
+
+
 TYPE_LABELS = {
     "vessel": "Visible vessels / fine red lines",
     "redness": "Redness",
@@ -75,6 +91,7 @@ TYPE_LABELS = {
     "limbal_ring": "Pale ring near the iris",
     "bump_near_corner": "Small raised bump near the corner",
     "corneal_haze": "Slight haze over the clear front surface",
+    "iris_pigment": "Iris pigment, not a sclera finding",
 }
 
 # objective, real-world note + how much a professional should be involved
@@ -98,6 +115,10 @@ TYPE_OBJECTIVE = {
                         "it in about two minutes.",
     "corneal_haze": "Any loss of clarity in the clear front surface of the eye should be checked by "
                     "an eye professional rather than self-assessed.",
+    "iris_pigment": "Freckles and pigment patches on the iris (the coloured part) are very common, "
+                    "usually lifelong, and harmless. They are not a sclerology zone finding and say "
+                    "nothing about the white of the eye. Worth a look only if one is new, growing, "
+                    "raised, or bleeding.",
 }
 
 TYPES_NEEDING_PRO = {"yellow_tint", "corneal_haze", "limbal_ring", "bump_near_corner"}
@@ -125,6 +146,16 @@ def _trad_line(construct: str) -> str:
     return f"{TRAD_PREFIX} {construct}"
 
 
+def _is_iris_spot(spot: dict) -> bool:
+    """True when a reported 'brown spot' actually sits on the iris (coloured part).
+
+    The vision model routinely describes iris freckles inside the brown_spots array,
+    sometimes tagging them zone=near_iris. Those are not sclera markings.
+    """
+    txt = (spot.get("description") or "").lower()
+    return any(k in txt for k in ("iris", "coloured part", "colored part", "pupil"))
+
+
 def build_findings(obs: dict, side_label: str) -> list[dict]:
     """Turn one eye's observation dict into a flat list of findings."""
     f = []
@@ -144,8 +175,8 @@ def build_findings(obs: dict, side_label: str) -> list[dict]:
             "what_we_see": (red.get("description") or "").strip()
                            or f"{level.capitalize()} redness across the {zones[0]} sclera.",
             "trad": _trad_line(
-                f"redness in the {ZONES[zones[0]]['name'].lower()} is read as irritation or heat "
-                f"in the {ZONES[zones[0]]['trad_organs']}."
+                f"redness in the {zone_phrase(zones[0])} is read as irritation or heat, "
+                f"traditionally linked to {ZONES[zones[0]]['trad_organs']}."
             ),
             "objective": TYPE_OBJECTIVE["redness"],
             "needs_pro": False,
@@ -180,6 +211,22 @@ def build_findings(obs: dict, side_label: str) -> list[dict]:
         })
 
     for spot in (obs.get("brown_spots") or [])[:4]:
+        desc = (spot.get("description") or "").strip()
+        if _is_iris_spot(spot):
+            # The model sometimes reports iris freckles as "brown spots". Those are not
+            # sclera markings: no zone reading, no sclerology line, no zone-map entry.
+            f.append({
+                "type": "iris_pigment",
+                "zone": None,
+                "zones": [],
+                "severity": spot.get("size", "small"),
+                "label": TYPE_LABELS["iris_pigment"],
+                "what_we_see": desc or "A small pigment spot on the coloured part of the eye.",
+                "trad": "",
+                "objective": TYPE_OBJECTIVE["iris_pigment"],
+                "needs_pro": False,
+            })
+            continue
         z = spot.get("zone") if spot.get("zone") in ZONES else "temporal"
         f.append({
             "type": "brown_spot",
@@ -187,10 +234,10 @@ def build_findings(obs: dict, side_label: str) -> list[dict]:
             "zones": [z],
             "severity": spot.get("size", "small"),
             "label": TYPE_LABELS["brown_spot"],
-            "what_we_see": (spot.get("description") or f"A small brown pigment spot in the {z} sclera.").strip(),
+            "what_we_see": desc or f"A small brown pigment spot in the {zone_phrase(z)}.",
             "trad": _trad_line(
-                f"pigment in the {ZONES[z]['name'].lower()} zone is read as stagnation in the "
-                f"{ZONES[z]['trad_organs']}."
+                f"pigment in the {zone_phrase(z)} is read as stagnation, "
+                f"traditionally linked to {ZONES[z]['trad_organs']}."
             ),
             "objective": TYPE_OBJECTIVE["brown_spot"],
             "needs_pro": False,
@@ -288,9 +335,11 @@ def build_summary(obs_bundle: dict, findings: list[dict], needs_pro: list[dict],
             "distinct markings in any zone. There is nothing here that asks for a second look."
         )
     else:
-        zones = {z for f in findings for z in f["zones"]}
+        sclera = [f for f in findings if f.get("zones")]
+        iris_only = [f for f in findings if not f.get("zones")]
+        zones = {z for f in sclera for z in f["zones"]}
         sev_order = ["low", "small", "mild", "moderate", "prominent", "marked", "high"]
-        known = [f["severity"] for f in findings if f.get("severity") in sev_order]
+        known = [f["severity"] for f in sclera if f.get("severity") in sev_order]
         worst = max(known, key=sev_order.index) if known else None
         tone = ""
         if worst in ("low", "small", "mild"):
@@ -299,21 +348,35 @@ def build_summary(obs_bundle: dict, findings: list[dict], needs_pro: list[dict],
             friendly = {"prominent": "moderate to strong", "moderate": "moderate",
                         "marked": "strong"}.get(worst, worst)
             tone = f" — the strongest of them reads as {friendly}"
-        parts.append(
-            f"We picked up {len(findings)} marking{'s' if len(findings) != 1 else ''} across "
-            f"{len(zones)} zone{'s' if len(zones) != 1 else ''}{tone}. "
-            "None of this is a diagnosis — it is what a camera can see on the surface of your eye."
-        )
-        lead = findings[0]
-        parts.append(
-            f"The most obvious one: {lead['what_we_see'].rstrip('.')}. "
-            f"{TYPE_OBJECTIVE[lead['type']]}"
-        )
-        if len(findings) > 1:
+        if sclera:
             parts.append(
-                "In traditional sclerology these markings are read as signals in the "
-                + ", ".join(sorted({ZONES.get(z, ZONES['whole'])['trad_organs'] for z in zones}))
-                + " — a tradition worth knowing about, not established science."
+                f"We picked up {len(sclera)} marking{'s' if len(sclera) != 1 else ''} across "
+                f"{len(zones)} zone{'s' if len(zones) != 1 else ''}{tone}. "
+                "None of this is a diagnosis — it is what a camera can see on the surface of your eye."
+            )
+            lead = sclera[0]
+            parts.append(
+                f"The most obvious one: {lead['what_we_see'].rstrip('.')}. "
+                f"{TYPE_OBJECTIVE[lead['type']]}"
+            )
+            if len(sclera) > 1:
+                parts.append(
+                    "In traditional sclerology these markings are read as signals "
+                    "traditionally linked to "
+                    + ", ".join(sorted({ZONES.get(z, ZONES['whole'])['trad_organs'] for z in zones}))
+                    + " — a tradition worth knowing about, not established science."
+                )
+        else:
+            parts.append(
+                "The white of both eyes came back even in this photo, with no distinct markings in any zone."
+            )
+        if iris_only:
+            n = len(iris_only)
+            parts.append(
+                f"Separately, the photo shows {'a pigment spot' if n == 1 else f'{n} pigment spots'} "
+                "on the coloured part of the eye (the iris). Freckles there are common and harmless, "
+                "and they are not a sclerology zone reading — so they are listed as a photo detail, "
+                "not a finding."
             )
 
     if needs_pro:
@@ -386,6 +449,9 @@ def build_report(obs_bundle: dict, summary: str) -> dict:
     needs_pro = [f for f in all_findings if f["needs_pro"]]
     unreadable = [s for s in ("right", "left") if not per_eye[s]["usable"]]
 
+    sclera_findings = [f for f in all_findings if f.get("zones")]
+    iris_findings = [f for f in all_findings if not f.get("zones")]
+
     return {
         "summary": summary,
         "per_eye": per_eye,
@@ -396,5 +462,6 @@ def build_report(obs_bundle: dict, summary: str) -> dict:
         "unreadable": unreadable,
         "red_flags": RED_FLAGS,
         "disclaimer": DISCLAIMER_SHORT,
-        "trad_lines": [f["trad"] for f in all_findings if f.get("trad")],
+        "counts": {"sclera": len(sclera_findings), "iris": len(iris_findings)},
+        "trad_lines": [f["trad"] for f in sclera_findings if f.get("trad")],
     }
