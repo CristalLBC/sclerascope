@@ -13,6 +13,8 @@ Two clearly separated layers, and the separation is the whole point:
    this layer is prefixed so the user can never mistake it for a diagnosis.
 """
 
+import re
+
 TRAD_PREFIX = "In traditional sclerology,"
 
 ZONES = {
@@ -147,13 +149,22 @@ def _trad_line(construct: str) -> str:
 
 
 def _is_iris_spot(spot: dict) -> bool:
-    """True when a reported 'brown spot' actually sits on the iris (coloured part).
+    """True when a reported 'brown spot' sits ON the iris (the coloured part).
 
-    The vision model routinely describes iris freckles inside the brown_spots array,
-    sometimes tagging them zone=near_iris. Those are not sclera markings.
+    The vision model mixes two things into brown_spots: real iris freckles
+    ("a brown spot on the iris near the lower edge") and legitimate sclera marks
+    near the limbus ("a brown spot on the sclera near the iris"). Only the first
+    kind is a non-finding; the second is a real near_iris sclera reading.
     """
     txt = (spot.get("description") or "").lower()
-    return any(k in txt for k in ("iris", "coloured part", "colored part", "pupil"))
+    if any(k in txt for k in ("coloured part", "colored part", "iris freckle", "iris pigment")):
+        return True
+    on_iris = re.search(r"\b(on|in|within|inside|across)\s+(the\s+)?iris\b", txt) is not None
+    sclera_near_iris = any(k in txt for k in (
+        "sclera near the iris", "near the iris", "around the iris", "iris edge",
+        "edge of the iris", "limbal", "limbus",
+    ))
+    return on_iris and not sclera_near_iris
 
 
 def build_findings(obs: dict, side_label: str) -> list[dict]:
