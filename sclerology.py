@@ -162,7 +162,7 @@ def _is_iris_spot(spot: dict) -> bool:
     on_iris = re.search(r"\b(on|in|within|inside|across)\s+(the\s+)?iris\b", txt) is not None
     sclera_near_iris = any(k in txt for k in (
         "sclera near the iris", "near the iris", "around the iris", "iris edge",
-        "edge of the iris", "limbal", "limbus",
+        "iris border", "edge of the iris", "border of the iris", "limbal", "limbus",
     ))
     return on_iris and not sclera_near_iris
 
