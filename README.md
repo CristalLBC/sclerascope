@@ -43,7 +43,7 @@ Admin panel: `/admin?key=<ADMIN_KEY>` — the key is generated into `.admin_key`
 | `ADMIN_KEY` | admin panel access |
 | `DATA_DIR` | where the SQLite db + photos live (Render disk mounts here) |
 | `HTTPS_ONLY` | `1` in production so the session cookie is Secure |
-| `PRICE_FULL` / `PRICE_MONTH` | displayed prices |
+| `PRICE_FULL` | displayed one-time price (no subscription tier) |
 | `SUPPORT_EMAIL` | shown on reports and legal pages |
 | `GUMROAD_PRODUCT_ID` | if set, `/redeem` also verifies Gumroad license keys |
 | `ENABLE_LLM_SUMMARY` | `1` to let the model write the summary (extra API call per scan) |
@@ -67,5 +67,6 @@ Free Render instances sleep after ~15 minutes idle, so the first request of the 
 ScleraScope is presented as wellness education, not a medical device: explicit
 "not FDA-cleared / does not diagnose" language on the landing page, in the consent flow,
 on every report, and on the waiver. Sclerology is labelled as a traditional practice with
-no scientific validation. Red-flag symptoms route the user to a real professional. Don't
+no scientific validation. The generic safety list (pain, vision change, injury) routes the user
+to a real professional; keep that list generic — disease-specific items read as screening. Don't
 remove those disclaimers — they are the product's legal cover.

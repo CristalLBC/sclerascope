@@ -22,8 +22,6 @@ services:
         value: support@dfyai.online
       - key: PRICE_FULL
         value: "19"
-      - key: PRICE_MONTH
-        value: "9.99"
       - key: GUMROAD_PRODUCT_ID
         sync: false
     disk:

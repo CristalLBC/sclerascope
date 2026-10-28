@@ -41,8 +41,7 @@ DATA = _default_data_dir()
 SCANS_DIR = DATA / "scans"
 DB_PATH = DATA / "sclerascope.db"
 WAIVER_VERSION = "2026-10-25"
-PRICE_FULL = os.environ.get("PRICE_FULL", "19")
-PRICE_MONTH = os.environ.get("PRICE_MONTH", "9.99")
+PRICE_FULL = os.environ.get("PRICE_FULL", "19")  # one-time full report; no subscription tier
 GUMROAD_PRODUCT_ID = (os.environ.get("GUMROAD_PRODUCT_ID", "").strip()
                       or "c5yl87szJCAT-gHVEnBAxQ==")  # live Gumroad product (env overrides)
 BUY_URL = os.environ.get("BUY_URL", "https://cristalhustler.gumroad.com/l/sclerascope-full-report")
@@ -58,7 +57,7 @@ app = Flask(__name__)
 @app.context_processor
 def _inject_store():
     """Make the Gumroad checkout link available to every template."""
-    return dict(buy_url=BUY_URL, price_full=PRICE_FULL, price_month=PRICE_MONTH,
+    return dict(buy_url=BUY_URL, price_full=PRICE_FULL,
                 support_email=SUPPORT_EMAIL)
 
 app.config["MAX_CONTENT_LENGTH"] = 24 * 1024 * 1024
@@ -129,7 +128,7 @@ def client_ip():
 # ------------------------------------------------------------------ routes ---
 @app.route("/")
 def index():
-    return render_template("index.html", price=PRICE_FULL, price_month=PRICE_MONTH,
+    return render_template("index.html", price=PRICE_FULL,
                            free_scans=FREE_SCANS, disclaimer=sclerology.DISCLAIMER_SHORT)
 
 
@@ -314,7 +313,7 @@ def report(scan_id):
     rep = json.loads(row["report_json"])
     unlocked = is_unlocked(scan_id, row["consent_id"])
     return render_template("report.html", r=rep, unlocked=unlocked, scan_id=scan_id,
-                           price=PRICE_FULL, price_month=PRICE_MONTH,
+                           price=PRICE_FULL,
                            disclaimer=sclerology.DISCLAIMER_SHORT, support=SUPPORT_EMAIL)
 
 
@@ -327,7 +326,7 @@ def preview(scan_id):
     if not row:
         abort(404)
     return render_template("report.html", r=json.loads(row["report_json"]), unlocked=True,
-                           scan_id=scan_id, price=PRICE_FULL, price_month=PRICE_MONTH,
+                           scan_id=scan_id, price=PRICE_FULL,
                            disclaimer=sclerology.DISCLAIMER_SHORT, support=SUPPORT_EMAIL)
 
 
@@ -357,7 +356,7 @@ def redeem():
             else:
                 msg = result["error"]
     return render_template("redeem.html", msg=msg, ok=ok, scan_id=request.args.get("scan_id", ""),
-                           price=PRICE_FULL, price_month=PRICE_MONTH, support=SUPPORT_EMAIL)
+                           price=PRICE_FULL, support=SUPPORT_EMAIL)
 
 
 def normalize_code(raw):

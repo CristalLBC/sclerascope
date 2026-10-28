@@ -125,14 +125,15 @@ TYPE_OBJECTIVE = {
 
 TYPES_NEEDING_PRO = {"yellow_tint", "corneal_haze", "limbal_ring", "bump_near_corner"}
 
+# Generic safety guidance only: pain, vision change, injury. Keep disease-specific or
+# screening-style items OUT of this list — they read as diagnostic screening, which is
+# exactly what draws regulator and app-store scrutiny, and the finding-level copy already
+# sends anything worrying to a professional.
 RED_FLAGS = [
     "Sudden or severe eye pain",
     "Sudden change or loss of vision, or a curtain / shadow across your sight",
     "New flashes of light or a jump in floaters",
-    "One eye that is very red with pain and light sensitivity",
-    "Yellowing of the eyes together with yellowing skin, dark urine, or pale stools",
     "Eye injury, chemical exposure, or something stuck in the eye",
-    "A pigment spot that is growing, raised, or bleeding",
 ]
 
 DISCLAIMER_SHORT = (
