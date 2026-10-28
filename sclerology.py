@@ -269,7 +269,13 @@ def build_findings(obs: dict, side_label: str) -> list[dict]:
         })
 
     lim = obs.get("limbal_ring") or {}
-    if lim.get("present"):
+    lim_desc = (lim.get("description") or "").lower()
+    lim_conf = (lim.get("confidence") or "low").lower()
+    glare = any(k in lim_desc for k in ("glare", "reflection", "reflective", "highlight",
+                                        "specular", "light patch", "shiny"))
+    # A pale ring drives the "worth showing a professional" banner, so it has to be
+    # something the model is actually sure about — not a flash reflection near the limbus.
+    if lim.get("present") and lim_conf in ("medium", "high") and not glare:
         f.append({
             "type": "limbal_ring",
             "zone": "near_iris",

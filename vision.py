@@ -45,6 +45,9 @@ Rules:
 - Describe appearance, never diagnose. Do NOT name diseases or conditions.
 - If something is not clearly visible, set present=false and confidence="low". Never guess.
 - Be conservative: a marking counts only if you can actually see it.
+- Ignore glare, camera reflections, specular highlights and bright light patches. A limbal
+  ring is a continuous greyish-white band at the edge of the cornea, not a bright patch from
+  a light source — if what you see is a reflection, set limbal_ring.present=false.
 - brown_spots are on the WHITE of the eye (the sclera) only. Freckles or pigment on the
   iris (the coloured ring around the pupil) do NOT go in brown_spots — mention them in
   iris.notes instead.
@@ -63,7 +66,7 @@ Return STRICT JSON, exactly this shape:
  "yellowing": {"present": false, "confidence": "low|medium|high", "description": ""},
  "brown_spots": [{"zone": "upper|lower|nasal|temporal|near_iris", "size": "small|medium|large", "description": ""}],
  "bluish_tint": {"present": false, "zones": [], "description": ""},
- "limbal_ring": {"present": false, "description": ""},
+ "limbal_ring": {"present": false, "confidence": "low|medium|high", "description": ""},
  "bump_near_corner": {"present": false, "which": "nasal|temporal", "description": ""},
  "corneal_clarity": "clear" | "slight_haze" | "cloudy" | "unknown",
  "pupil": {"shape": "round|irregular|unknown", "notes": ""},
@@ -188,7 +191,7 @@ EMPTY = {
     "yellowing": {"present": False, "confidence": "low", "description": ""},
     "brown_spots": [],
     "bluish_tint": {"present": False, "zones": [], "description": ""},
-    "limbal_ring": {"present": False, "description": ""},
+    "limbal_ring": {"present": False, "confidence": "low", "description": ""},
     "bump_near_corner": {"present": False, "which": "nasal", "description": ""},
     "corneal_clarity": "unknown",
     "pupil": {"shape": "unknown", "notes": ""},
